@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Particle Sphere</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020611;color:#eafaff;font-family:Arial, sans-serif}
+body{background:radial-gradient(ellipse at 50% 48%,#09243a 0%,#04101f 42%,#01040b 78%)}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.ui{position:absolute;z-index:2;top:26px;left:0;right:0;text-align:center;padding:0 18px;pointer-events:none}
+h1{font-size:clamp(20px,5vw,34px);letter-spacing:.12em;text-transform:uppercase;margin:0 0 8px;color:#d8f8ff;text-shadow:0 0 18px #27dfff}
+p{font-size:13px;letter-spacing:.08em;color:#8bc9db;margin:0}
+.controls{position:absolute;z-index:3;bottom:25px;left:0;right:0;display:flex;justify-content:center;gap:10px;padding:0 14px}
+button{border:1px solid #37cfee88;background:#062338cc;color:#c8f8ff;border-radius:30px;padding:11px 16px;font-size:13px;backdrop-filter:blur(8px)}
+button:active{transform:scale(.97);background:#0b4962}
+.note{position:absolute;bottom:82px;left:0;right:0;text-align:center;color:#6299ae;font-size:11px;letter-spacing:.06em;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui"><h1>INCLUSIVE COMIC STUDIO</h1><p>INTERACTIVE 3D PARTICLE EXPERIENCE</p></div>
+<div class="note">Саусағыңмен шарды қозға • Drag to rotate</div>
+<div class="controls"><button id="pause">Ⅱ Тоқтату</button><button id="more">✦ Жарқырау</button><button id="reset">↻ Қалпына келтіру</button></div>
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d');let W,H,D,points=[],stars=[],angle=0,tilt=0,paused=false,drag=false,px=0,py=0,boost=1;
+function size(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;g.setTransform(D,0,0,D,0,0);make()}
+function make(){points=[];stars=[];let n=Math.min(2600,Math.floor(W*H/250));let golden=Math.PI*(3-Math.sqrt(5));for(let i=0;i<n;i++){let y=1-2*(i+.5)/n,r=Math.sqrt(1-y*y),a=golden*i;points.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,s:.45+Math.random()*1.1,phase:Math.random()*6.28})}for(let i=0;i<180;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.25,a:Math.random()*.8+.1,p:Math.random()*6.28})}
+function render(t){g.clearRect(0,0,W,H);
+let bg=g.createRadialGradient(W/2,H/2,20,W/2,H/2,Math.max(W,H)*.68);bg.addColorStop(0,'#0a2940');bg.addColorStop(.5,'#041323');bg.addColorStop(1,'#01040a');g.fillStyle=bg;g.fillRect(0,0,W,H);
+for(const s of stars){let tw=.45+.55*Math.sin(t*.001+s.p);g.fillStyle=`rgba(150,225,255,${s.a*tw})`;g.beginPath();g.arc(s.x,s.y,s.r,0,Math.PI*2);g.fill()}
+let R=Math.min(W,H)*.31,cx=W/2,cy=H*.51,ca=Math.cos(angle),sa=Math.sin(angle),ct=Math.cos(tilt),st=Math.sin(tilt);
+let arr=points.map(p=>{let x=p.x*ca-p.z*sa,z=p.x*sa+p.z*ca,y=p.y*ct-z*st,z2=p.y*st+z*ct;let perspective=3.2/(3.2-z2*.45);return {...p,X:cx+x*R*perspective,Y:cy+y*R*perspective,Z:z2}});
+arr.sort((a,b)=>a.Z-b.Z);
+for(let p of arr){let depth=(p.Z+1)/2,tw=.72+.28*Math.sin(t*.002+p.phase),rad=p.s*(.7+depth*.9)*boost;let alpha=(.18+depth*.78)*tw;g.beginPath();g.fillStyle=`rgba(${Math.round(40+30*depth)},${Math.round(175+75*depth)},255,${alpha})`;g.shadowBlur=(2+depth*12)*boost;g.shadowColor='#23dfff';g.arc(p.X,p.Y,rad,0,Math.PI*2);g.fill()}
+g.shadowBlur=0;
+// subtle orbit rings
+g.save();g.translate(cx,cy);g.rotate(-.23+angle*.12);g.strokeStyle='rgba(66,218,255,.12)';g.lineWidth=1;g.beginPath();g.ellipse(0,0,R*1.18,R*.28,0,0,Math.PI*2);g.stroke();g.restore();
+if(!paused&&!drag)angle+=.0035;requestAnimationFrame(render)}
+c.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;c.setPointerCapture(e.pointerId)});
+c.addEventListener('pointermove',e=>{if(drag){angle+=(e.clientX-px)*.009;tilt=Math.max(-1.2,Math.min(1.2,tilt+(e.clientY-py)*.006));px=e.clientX;py=e.clientY}});
+c.addEventListener('pointerup',()=>drag=false);c.addEventListener('pointercancel',()=>drag=false);
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'▶ Жалғастыру':'Ⅱ Тоқтату'};
+document.getElementById('more').onclick=()=>{boost=boost===1?1.7:1};
+document.getElementById('reset').onclick=()=>{angle=0;tilt=0;boost=1;paused=false;document.getElementById('pause').textContent='Ⅱ Тоқтату'};
+addEventListener('resize',size);size();requestAnimationFrame(render);
+</script>
+</body></html>
